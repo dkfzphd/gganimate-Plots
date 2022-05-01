@@ -1,0 +1,89 @@
+---
+title: "Untitled"
+author: "ManBuXiaoCun"
+date: '2022-05-01'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(tidyverse)
+library(gganimate)
+library(readr)
+library(janitor)
+library(ggthemes)
+library(scales)
+```
+
+Read in data
+There is a very useful package for that, called **janitor** that makes cleaning up column names very simple. It removes all unique characters and replaces spaces with _.
+```{r}
+dat <- read_csv( here::here("data", "population-past-future.csv") )
+dat <- clean_names(dat) # change illegal name to leagal name
+data.ori <- dat %>% 
+   rename(total_population = population_historical_estimates_and_future_projections) 
+  # rename (df, newname = old name)
+```
+
+Check if some duplicates
+```{r}
+anyDuplicated(data.ori)
+```
+
+Filter out China, India, US, Germany data1
+```{r}
+data1 <- data.ori %>% 
+        filter( entity %in% 
+                  c("United States" , "China" , "India", "Germany") 
+              ) %>% 
+        filter(year >= 1950)
+data2 <- data1 %>% mutate(population.billion = total_population/1e9)
+
+head(data2)
+```
+
+Plot with China, India, US, Germany data1
+```{r}
+plot1 <- ggplot(data2, aes(x = year, y = population.billion))+
+            geom_point( aes(color = entity), size = 0.5)+
+            geom_line(aes(color = entity))+
+            scale_y_continuous(labels = label_number(suffix = " billion"))+
+            theme_wsj()
+plot1 <- plot1+theme(legend.title = element_blank()) 
+plot1
+```
+
+Y-axis scale modification
+```{r}
+plot2 <- ggplot(data2, aes(x = year, y = total_population/1e9))+
+            
+            geom_line(aes(color = entity),size=2)+
+            scale_y_continuous(labels = label_number(suffix = " billion"))+
+            labs(y = NULL,
+                 x = NULL)+
+            theme_economist()
+plot2 <- plot2+theme(legend.title = element_blank()) 
+plot2
+```
+
+Preview the gif
+```{r}
+plot_gif <- plot2 + transition_reveal(year)
+plot_gif
+```
+
+Save gif
+```{r}
+my.animation <- plot2 + transition_reveal(year)
+
+animate(my.animation, height = 8, width = 10, units = "in", res = 150)
+# animate(p, fps=1) control the speed of a gif
+
+anim_save("my.animation1.gif")
+```
+
